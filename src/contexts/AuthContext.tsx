@@ -1,63 +1,52 @@
-// src/contexts/AuthContext.tsx
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { User } from '../models/User';
-import { getUser, saveUser, removeUser } from '../services/storage';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { getUser } from '../utils/Authstorage';
 
-interface AuthContextType {
+type User = {
+  name: string;
+  email: string;
+  gender: string;
+  age: string;
+  password: string;
+};
+
+type AuthContextType = {
   user: User | null;
-  isLoading: boolean;
-  login: (user: User) => Promise<void>;
-  register: (user: User) => Promise<void>;
-  logout: () => Promise<void>;
-}
+  login: (user: User) => void;
+  logout: () => void;
+};
 
-export const AuthContext = createContext<AuthContextType>({
+const AuthContext = createContext<AuthContextType>({
   user: null,
-  isLoading: true,
-  login: async () => {},
-  register: async () => {},
-  logout: async () => {},
+  login: () => {},
+  logout: () => {},
 });
 
-interface AuthProviderProps {
-  children: ReactNode;
-}
-
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is already logged in
     const loadUser = async () => {
-      const savedUser = await getUser();
-      if (savedUser) {
-        setUser(savedUser);
+      const storedUser = await getUser();
+      if (storedUser) {
+        setUser(storedUser);
       }
-      setIsLoading(false);
     };
-
     loadUser();
   }, []);
 
-  const login = async (userData: User) => {
-    await saveUser(userData);
-    setUser(userData);
+  const login = (user: User) => {
+    setUser(user);
   };
 
-  const register = async (userData: User) => {
-    await saveUser(userData);
-    setUser(userData);
-  };
-
-  const logout = async () => {
-    await removeUser();
+  const logout = () => {
     setUser(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
+
+export const useAuth = () => useContext(AuthContext);
